@@ -7,7 +7,7 @@ struct HomeView: View {
     @State private var section = AppTab.recommended
 
     private var availableSections: [AppTab] {
-        settings.homeTabs
+        settings.homeTabs.filter { $0 != .music }
     }
 
     private var activeSection: AppTab {
