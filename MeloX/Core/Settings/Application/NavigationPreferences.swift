@@ -120,7 +120,6 @@ enum AppTab: String, CaseIterable, Identifiable {
     }
 
     static let movablePrimaryContentPages: [AppTab] = [
-        .music,
         .podcasts,
         .explore,
         .library,
