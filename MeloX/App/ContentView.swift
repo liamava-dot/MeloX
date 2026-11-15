@@ -7,11 +7,6 @@ private enum ContentSheet: String, Identifiable {
     var id: String { rawValue }
 }
 
-private enum ContentRoute: Hashable {
-    case privateMessages
-    case songRecognition
-}
-
 private struct HeartModeLaunchReadiness: Equatable {
     let hasRestoredPlayback: Bool
     let isLoggedIn: Bool
@@ -394,7 +389,7 @@ struct ContentView: View {
 
     private var sidebarHomeTabs: [AppTab] {
         settings.homeTabs.filter {
-            $0 != .recommended && $0.libraryPage == nil
+            $0 != .music && $0 != .recommended && $0.libraryPage == nil
                 && !settings.visibleTabs.contains($0)
         }
     }
@@ -407,13 +402,14 @@ struct ContentView: View {
     }
 
     private var navigationTabs: [AppTab] {
-        settings.visibleTabs
+        settings.visibleTabs.filter { $0 != .music }
             + (usesTabletNavigation ? sidebarHomeTabs + sidebarLibraryTabs : [])
     }
 
     private var displayedPrimaryTabs: [AppTab] {
-        guard usesTabletNavigation, settings.visibleTabs.contains(.search) else { return settings.visibleTabs }
-        return [.search] + settings.visibleTabs.filter { $0 != .search }
+        let visibleTabs = settings.visibleTabs.filter { $0 != .music }
+        guard usesTabletNavigation, visibleTabs.contains(.search) else { return visibleTabs }
+        return [.search] + visibleTabs.filter { $0 != .search }
     }
 
     private var tabs: some View {
@@ -487,9 +483,6 @@ struct ContentView: View {
                 .toolbar {
                     primaryToolbar(for: tab)
                 }
-                .navigationDestination(for: ContentRoute.self) { route in
-                    contentDestination(for: route)
-                }
                 .musicDestinations(in: musicNavigationNamespace)
         }
     }
@@ -539,25 +532,6 @@ struct ContentView: View {
         for tab: AppTab
     ) -> some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
-            if library.isLoggedIn {
-                Button {
-                    navigate(to: .privateMessages, in: tab)
-                } label: {
-                    MusicToolbarSymbol(systemName: "bubble.left.and.bubble.right")
-                }
-                .accessibilityLabel("ui.messages.private.title")
-                .accessibilityHint("ui.messages.private.open_hint")
-                .accessibilityIdentifier("navigation-private-messages")
-            }
-
-            Button {
-                navigate(to: .songRecognition, in: tab)
-            } label: {
-                MusicToolbarSymbol(systemName: "waveform")
-            }
-            .accessibilityLabel("ui.recognition.title")
-            .accessibilityIdentifier("navigation-recognition")
-
             if !usesTabletNavigation {
                 Button {
                     presentedSheet = .settings
@@ -566,18 +540,6 @@ struct ContentView: View {
                 }
                 .accessibilityLabel(accountToolbarAccessibilityLabel)
             }
-        }
-    }
-
-    @ViewBuilder
-    private func contentDestination(
-        for route: ContentRoute
-    ) -> some View {
-        switch route {
-        case .privateMessages:
-            NeteasePrivateMessagesView()
-        case .songRecognition:
-            SongRecognitionView()
         }
     }
 
@@ -668,15 +630,6 @@ struct ContentView: View {
         guard let route = pendingMusicRoute else { return }
         pendingMusicRoute = nil
         navigate(to: route)
-    }
-
-    private func navigate(
-        to route: ContentRoute,
-        in tab: AppTab
-    ) {
-        var path = navigationPaths[tab] ?? NavigationPath()
-        path.append(route)
-        navigationPaths[tab] = path
     }
 
     private func navigate(to route: MusicRoute) {
