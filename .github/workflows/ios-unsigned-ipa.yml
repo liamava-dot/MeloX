@@ -1,0 +1,71 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - custom/ios-remove-duplicate-music-and-toolbar-actions
+    paths:
+      - 'MeloX/**'
+      - 'MeloXWatch/**'
+      - 'MeloXWatchShared/**'
+      - 'MeloXLyricsWidget/**'
+      - 'MeloXLiveActivityShared/**'
+      - 'MeloXLocalization/**'
+      - 'MeloX.xcodeproj/**'
+      - '.github/workflows/ios-unsigned-ipa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcodebuild -list -project MeloX.xcodeproj
+
+      - name: Build unsigned iOS app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project MeloX.xcodeproj \
+            -scheme MeloX \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/MeloXDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/MeloXDerivedData/Build/Products/Release-iphoneos/MeloX.app"
+          test -d "$APP"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          ditto "$APP" "$RUNNER_TEMP/ipa/Payload/MeloX.app"
+          cd "$RUNNER_TEMP/ipa"
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/MeloX-unsigned.ipa" Payload
+          test -s "$GITHUB_WORKSPACE/MeloX-unsigned.ipa"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeloX-unsigned-ipa
+          path: MeloX-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
