@@ -2,12 +2,20 @@ import SwiftUI
 
 struct LibraryDownloadsView: View {
     let searchQuery: String
+    var categoryHeader: AnyView? = nil
 
     @Environment(DownloadStore.self) private var downloads
     @Environment(PlayerStore.self) private var player
 
     var body: some View {
         List {
+            if let categoryHeader {
+                categoryHeader
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             if !isSearching {
                 NavigationLink {
                     DownloadsView()

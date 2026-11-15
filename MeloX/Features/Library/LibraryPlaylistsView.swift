@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LibraryPlaylistsView: View {
     let searchQuery: String
+    var categoryHeader: AnyView? = nil
 
     @Environment(LibraryStore.self) private var library
 
@@ -13,6 +14,13 @@ struct LibraryPlaylistsView: View {
 
     var body: some View {
         List {
+            if let categoryHeader {
+                categoryHeader
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             if !isSearching, let userID = library.profile?.id {
                 Section("ui.library.section.mine") {
                     NavigationLink {

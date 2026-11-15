@@ -28,12 +28,13 @@ struct LibraryView: View {
         fixedPage.map { [$0] } ?? settings.embeddedLibraryPages
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            if fixedPage == nil, availablePages.count > 1 {
-                categoryTabs
-            }
+    private var scrollingCategoryHeader: AnyView? {
+        guard fixedPage == nil, availablePages.count > 1 else { return nil }
+        return AnyView(categoryTabs)
+    }
 
+    var body: some View {
+        Group {
             if availablePages.isEmpty {
                 ContentUnavailableView(
                     "ui.library.pages_separated.title",
@@ -41,16 +42,15 @@ struct LibraryView: View {
                     description: Text("ui.library.pages_separated.message")
                 )
             } else if section == .downloads {
-                LibraryDownloadsView(searchQuery: searchQuery)
+                LibraryDownloadsView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             } else if !library.isLoggedIn {
-                loginUnavailableView
+                loggedOutContent
             } else if section == .cloud {
-                CloudMusicView(searchQuery: searchQuery)
+                CloudMusicView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             } else {
                 libraryContent
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .libraryNavigationTitle(
             fixedPage.map { AppTab(libraryPage: $0).title }
                 ?? L10n.string("ui.navigation.library"),
@@ -147,6 +147,16 @@ struct LibraryView: View {
         .padding(.vertical, 8)
     }
 
+    private var loggedOutContent: some View {
+        ScrollView {
+            if let scrollingCategoryHeader {
+                scrollingCategoryHeader
+            }
+            loginUnavailableView
+                .frame(maxWidth: .infinity, minHeight: 420)
+        }
+    }
+
     private var loginUnavailableView: some View {
         ContentUnavailableView {
             Label("ui.account.login_required", systemImage: "person.crop.circle.badge.exclamationmark")
@@ -176,21 +186,21 @@ struct LibraryView: View {
         default:
             switch section {
             case .songs:
-                LibrarySongsView(searchQuery: searchQuery)
+                LibrarySongsView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             case .playlists:
-                LibraryPlaylistsView(searchQuery: searchQuery)
+                LibraryPlaylistsView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             case .artists:
-                LibraryArtistsView(searchQuery: searchQuery)
+                LibraryArtistsView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             case .albums:
-                LibraryAlbumsView(searchQuery: searchQuery)
+                LibraryAlbumsView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             case .podcasts:
-                SubscribedPodcastsView(searchQuery: searchQuery)
+                SubscribedPodcastsView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             case .downloads:
-                LibraryDownloadsView(searchQuery: searchQuery)
+                LibraryDownloadsView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             case .cloud:
-                CloudMusicView(searchQuery: searchQuery)
+                CloudMusicView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             case .history:
-                LibraryHistoryView(searchQuery: searchQuery)
+                LibraryHistoryView(searchQuery: searchQuery, categoryHeader: scrollingCategoryHeader)
             }
         }
     }

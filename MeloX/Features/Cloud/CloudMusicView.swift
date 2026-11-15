@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct CloudMusicView: View {
     let searchQuery: String
+    var categoryHeader: AnyView? = nil
 
     @Environment(CloudMusicStore.self) private var cloud
     @Environment(PlayerStore.self) private var player
@@ -105,6 +106,13 @@ struct CloudMusicView: View {
 
     private var cloudList: some View {
         List {
+            if let categoryHeader {
+                categoryHeader
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             if cloud.isUploading {
                 HStack(spacing: 12) {
                     ProgressView()

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LibrarySongsView: View {
     let searchQuery: String
+    var categoryHeader: AnyView? = nil
 
     @Environment(LibraryStore.self) private var library
     @Environment(PlayerStore.self) private var player
@@ -20,6 +21,13 @@ struct LibrarySongsView: View {
     var body: some View {
         ScrollViewReader { proxy in
             List {
+            if let categoryHeader {
+                categoryHeader
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
                 if !displayedSongs.isEmpty {
                     Button(action: playDisplayedSongs) {
                         HStack {

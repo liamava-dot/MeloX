@@ -2,12 +2,20 @@ import SwiftUI
 
 struct LibraryHistoryView: View {
     let searchQuery: String
+    var categoryHeader: AnyView? = nil
 
     @Environment(LibraryStore.self) private var library
     @Environment(PlayerStore.self) private var player
 
     var body: some View {
         List {
+            if let categoryHeader {
+                categoryHeader
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             if !displayedSongs.isEmpty {
                 Button {
                     Task { await player.playAll(displayedSongs) }

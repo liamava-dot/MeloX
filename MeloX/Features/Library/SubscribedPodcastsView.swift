@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SubscribedPodcastsView: View {
     let searchQuery: String
+    var categoryHeader: AnyView? = nil
 
     @Environment(LibraryStore.self) private var library
 
@@ -10,6 +11,13 @@ struct SubscribedPodcastsView: View {
 
     var body: some View {
         List {
+            if let categoryHeader {
+                categoryHeader
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             if !displayedPodcasts.isEmpty {
                 Text(
                     isSearching
