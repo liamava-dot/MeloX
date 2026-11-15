@@ -37,6 +37,7 @@ struct LibrarySongsView: View {
                         }
                     }
                     .disabled(isPreparingPlayback)
+                    .listRowSeparator(.hidden, edges: .top)
 
                     if !isSearching {
                         heartModeButton
@@ -74,23 +75,6 @@ struct LibrarySongsView: View {
             }
         }
         .listStyle(.plain)
-        .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                if songToLocate != nil {
-                    ProgressView()
-                        .accessibilityLabel("ui.collection.locating_playing")
-                }
-                Menu {
-                    Button("ui.collection.locate_playing", systemImage: "scope") {
-                        songToLocate = currentSongID
-                    }
-                    .disabled(currentSongID == nil || songToLocate != nil || isPreparingSearchResults)
-                } label: {
-                    Image(systemName: "ellipsis")
-                }
-                .accessibilityLabel("ui.common.more")
-            }
-        }
         .alert("ui.collection.locate_failed", isPresented: Binding(
             get: { locateErrorMessage != nil },
             set: { if !$0 { locateErrorMessage = nil } }

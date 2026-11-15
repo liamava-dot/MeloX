@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct LibraryView: View {
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(LibraryStore.self) private var library
     @Environment(AppSettings.self) private var settings
 
@@ -31,17 +30,8 @@ struct LibraryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !showsNavigationTitle, fixedPage == nil, availablePages.count > 1 {
-                Group {
-                    if availablePages.count > 4, horizontalSizeClass == .compact {
-                        pagePicker.pickerStyle(.menu)
-                    } else {
-                        pagePicker.pickerStyle(.segmented)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(.background)
+            if fixedPage == nil, availablePages.count > 1 {
+                categoryTabs
             }
 
             if availablePages.isEmpty {
@@ -65,20 +55,13 @@ struct LibraryView: View {
             fixedPage.map { AppTab(libraryPage: $0).title }
                 ?? L10n.string("ui.navigation.library"),
             isPresented: showsNavigationTitle,
-            usesInlineTitle: fixedPage == nil && availablePages.count > 1
+            usesLargeTitle: fixedPage == nil
         )
         .librarySearchable(
             text: $searchQuery,
             prompt: searchPrompt,
             isEnabled: canSearchCurrentPage
         )
-        .toolbar {
-            if showsNavigationTitle, fixedPage == nil, availablePages.count > 1 {
-                ToolbarTitleMenu {
-                    pagePicker.pickerStyle(.inline)
-                }
-            }
-        }
         .onAppear {
             guard !hasAppliedInitialPage else { return }
             hasAppliedInitialPage = true
@@ -137,12 +120,31 @@ struct LibraryView: View {
         }
     }
 
-    private var pagePicker: some View {
-        Picker("ui.library.category_picker", selection: $section) {
-            ForEach(availablePages) { item in
-                Text(item.title).tag(item)
+    private var categoryTabs: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                ForEach(availablePages) { page in
+                    Button {
+                        section = page
+                    } label: {
+                        Text(page.title)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(section == page ? .white : .primary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 9)
+                            .background(
+                                section == page ? Color.accentColor : Color(uiColor: .secondarySystemFill),
+                                in: Capsule()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(section == page ? .isSelected : [])
+                }
             }
+            .padding(.horizontal, 16)
         }
+        .scrollIndicators(.hidden)
+        .padding(.vertical, 8)
     }
 
     private var loginUnavailableView: some View {
@@ -227,11 +229,16 @@ private extension View {
     func libraryNavigationTitle(
         _ title: String,
         isPresented: Bool,
-        usesInlineTitle: Bool
+        usesLargeTitle: Bool
     ) -> some View {
         if isPresented {
-            navigationTitle(title)
-                .navigationBarTitleDisplayMode(usesInlineTitle ? .inline : .automatic)
+            if usesLargeTitle {
+                navigationTitle(title)
+                    .navigationBarTitleDisplayMode(.large)
+            } else {
+                navigationTitle(title)
+                    .navigationBarTitleDisplayMode(.automatic)
+            }
         } else {
             self
         }

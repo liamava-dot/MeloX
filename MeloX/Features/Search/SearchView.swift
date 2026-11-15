@@ -33,6 +33,7 @@ struct SearchView: View {
             }
         }
         .navigationTitle("ui.navigation.search")
+        .navigationBarTitleDisplayMode(.large)
         .searchable(
             text: $query,
             placement: .navigationBarDrawer(displayMode: .always),

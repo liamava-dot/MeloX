@@ -45,6 +45,7 @@ struct ExploreView: View {
         if showsNavigationTitle {
             content
                 .navigationTitle(navigationTitle)
+                .navigationBarTitleDisplayMode(.large)
         } else {
             content
         }
