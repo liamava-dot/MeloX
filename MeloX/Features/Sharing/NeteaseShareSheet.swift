@@ -5,12 +5,7 @@ struct NeteaseShareSheet: View {
 
     var body: some View {
         NavigationStack {
-            switch presentation.mode {
-            case .privateMessage:
-                NeteasePrivateMessageView(resource: presentation.resource)
-            case .timeline:
-                NeteaseTimelineShareView(resource: presentation.resource)
-            }
+            NeteaseTimelineShareView(resource: presentation.resource)
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)

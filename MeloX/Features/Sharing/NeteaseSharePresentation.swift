@@ -1,7 +1,6 @@
 import SwiftUI
 
 enum NeteaseShareMode: String, Hashable {
-    case privateMessage
     case timeline
 }
 
@@ -46,12 +45,6 @@ struct NeteaseShareMenuContent: View {
     @Environment(\.openNeteaseShare) private var openNeteaseShare
 
     var body: some View {
-        Button {
-            openNeteaseShare(resource, mode: .privateMessage)
-        } label: {
-            Label("ui.sharing.netease_private_message", systemImage: "paperplane")
-        }
-
         if resource.supportsTimelineSharing {
             Button {
                 openNeteaseShare(resource, mode: .timeline)

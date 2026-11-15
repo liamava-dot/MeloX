@@ -102,8 +102,6 @@ struct NowPlayingTabletView: View {
 
             GlassEffectContainer(spacing: 12) {
                 HStack(spacing: 12) {
-                    FloatingLyricsButton()
-
                     if page == .lyrics {
                         if lyrics.contains(where: { $0.hasTranslation || $0.hasRomanization }) {
                             NowPlayingLyricsLanguageButton(

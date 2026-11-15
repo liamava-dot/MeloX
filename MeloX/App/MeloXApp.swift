@@ -14,7 +14,6 @@ struct MeloXApp: App {
     @State private var phoneWatchSync: PhoneWatchSyncService
     @State private var listenTogether: ListenTogetherStore
     @State private var lyrics: LyricsStore
-    @State private var floatingLyrics: FloatingLyricsController
     @State private var lyricsNotifications:
         LyricsNotificationController
     @State private var screenAwakeCoordinator: ScreenAwakeCoordinator
@@ -63,11 +62,6 @@ struct MeloXApp: App {
         )
         let lyricService = LyricsService(api: api, settings: settings)
         let lyrics = LyricsStore(service: lyricService)
-        let floatingLyrics = FloatingLyricsController(
-            player: player,
-            settings: settings,
-            lyricsStore: lyrics
-        )
         _settings = State(initialValue: settings)
         _api = State(initialValue: api)
         _library = State(initialValue: library)
@@ -77,7 +71,6 @@ struct MeloXApp: App {
         _phoneWatchSync = State(initialValue: phoneWatchSync)
         _listenTogether = State(initialValue: listenTogether)
         _lyrics = State(initialValue: lyrics)
-        _floatingLyrics = State(initialValue: floatingLyrics)
         _lyricsNotifications = State(
             initialValue: lyricsNotifications
         )
@@ -96,7 +89,6 @@ struct MeloXApp: App {
                 .environment(player)
                 .environment(listenTogether)
                 .environment(lyrics)
-                .environment(floatingLyrics)
                 .environment(lyricsNotifications)
                 .environment(screenAwakeCoordinator)
                 .environment(releaseNotes)

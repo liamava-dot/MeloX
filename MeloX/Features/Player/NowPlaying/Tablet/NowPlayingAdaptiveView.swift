@@ -75,11 +75,6 @@ struct NowPlayingAdaptiveView: View {
         }
         .visibilityPriority(.high)
 
-        ToolbarItem(placement: .bottomBar) {
-            FloatingLyricsButton()
-        }
-        .axisBehavior(.verticalPreferred)
-
         if page == .lyrics {
             if lyrics.contains(where: { $0.hasTranslation || $0.hasRomanization }) {
                 ToolbarItem(placement: .bottomBar) {

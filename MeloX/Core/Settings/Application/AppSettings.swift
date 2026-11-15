@@ -1301,9 +1301,7 @@ final class AppSettings {
     let textPV: TextPVPreferences
     let equalizer: AudioEqualizerPreferences
     let autoMix: AutoMixPreferences
-    let floatingLyrics: FloatingLyricsPreferences
     let lyricsNotifications: LyricsNotificationPreferences
-    let songRecognition: SongRecognitionPreferences
     let contentFeatures: ContentFeaturePreferences
 
     @ObservationIgnored
@@ -1317,11 +1315,9 @@ final class AppSettings {
         textPV = TextPVPreferences(defaults: defaults)
         equalizer = AudioEqualizerPreferences(defaults: defaults)
         autoMix = AutoMixPreferences(defaults: defaults)
-        floatingLyrics = FloatingLyricsPreferences(defaults: defaults)
         lyricsNotifications = LyricsNotificationPreferences(
             defaults: defaults
         )
-        songRecognition = SongRecognitionPreferences(defaults: defaults)
         contentFeatures = ContentFeaturePreferences(defaults: defaults)
         hasCompletedOnboarding = defaults.bool(
             forKey: Key.hasCompletedOnboarding
@@ -2107,7 +2103,6 @@ final class AppSettings {
         lyricsAdvanceTimeAppliesToWordByWord = false
         lyricsRefreshRate = .defaultValue
         textPV.reset()
-        floatingLyrics.reset()
         lyricsNotifications.reset()
         playerScreenAwakeMode = .lyrics
         rememberNowPlayingPage = false

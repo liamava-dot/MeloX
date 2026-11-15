@@ -246,13 +246,11 @@
 				6DB1D880300F5FA000FB3AEE /* Resources */,
 				A1D0AD000000000000000004 /* Generate Release Notes */,
 				1B6FDCCD92FB45FD9037E16A /* Embed Foundation Extensions */,
-				B1000000000000000000000C /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				B680245FE2CA46B0B69EBFF8 /* PBXTargetDependency */,
-				B1000000000000000000000E /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				6DB1D884300F5FA000FB3AEE /* MeloX */,

@@ -7,11 +7,6 @@ private enum ContentSheet: String, Identifiable {
     var id: String { rawValue }
 }
 
-private enum ContentRoute: Hashable {
-    case privateMessages
-    case songRecognition
-}
-
 private struct HeartModeLaunchReadiness: Equatable {
     let hasRestoredPlayback: Bool
     let isLoggedIn: Bool
@@ -26,7 +21,6 @@ struct ContentView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(DownloadStore.self) private var downloads
     @Environment(LyricsStore.self) private var lyrics
-    @Environment(FloatingLyricsController.self) private var floatingLyrics
 
     @State private var selectedTab: AppTab
     @State private var navigationPaths = Dictionary(
@@ -156,26 +150,8 @@ struct ContentView: View {
             .onChange(of: settings.lyricsSourcePreference) { _, _ in
                 Task { await synchronizeLyrics() }
             }
-            .task {
-                await floatingLyrics.monitor()
-            }
             .task(id: settings.cookie) {
                 await library.refresh()
-            }
-            .background(alignment: .topLeading) {
-                FloatingLyricsPictureInPictureSource(
-                    controller: floatingLyrics
-                )
-                .frame(
-                    width:
-                        FloatingLyricsPictureInPictureSource
-                            .sourceSize.width,
-                    height:
-                        FloatingLyricsPictureInPictureSource
-                            .sourceSize.height
-                )
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
             }
             .onAppear {
                 guard usesTabletNavigation,
@@ -205,19 +181,6 @@ struct ContentView: View {
                 player.refreshLyricsNotification()
                 guard phase == .active else { return }
                 player.refreshLyricsLiveActivity()
-            }
-            .onChange(of: floatingLyrics.restorationRequestID) {
-                guard floatingLyrics.restorationRequestID > 0,
-                      player.currentSong != nil else {
-                    floatingLyrics.completeRestoration(success: false)
-                    return
-                }
-
-                presentPlayer(page: .lyrics)
-                Task { @MainActor in
-                    await Task.yield()
-                    floatingLyrics.completeRestoration(success: true)
-                }
             }
             .alert(
                 "ui.error.playback.title",
@@ -278,26 +241,6 @@ struct ContentView: View {
                 }
             } message: {
                 Text(downloads.errorMessage ?? L10n.string("ui.error.download.operation_failed"))
-            }
-            .alert(
-                "ui.error.floating_lyrics.title",
-                isPresented: Binding(
-                    get: { floatingLyrics.errorMessage != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            floatingLyrics.dismissError()
-                        }
-                    }
-                )
-            ) {
-                Button("ui.common.ok", role: .cancel) {
-                    floatingLyrics.dismissError()
-                }
-            } message: {
-                Text(
-                    floatingLyrics.errorMessage
-                        ?? L10n.string("ui.error.picture_in_picture.unavailable")
-                )
             }
             .coordinateListenTogether()
             .recognizesClipboardLinksOnLaunch { song in
@@ -394,7 +337,7 @@ struct ContentView: View {
 
     private var sidebarHomeTabs: [AppTab] {
         settings.homeTabs.filter {
-            $0 != .recommended && $0.libraryPage == nil
+            $0 != .music && $0 != .recommended && $0.libraryPage == nil
                 && !settings.visibleTabs.contains($0)
         }
     }
@@ -407,13 +350,14 @@ struct ContentView: View {
     }
 
     private var navigationTabs: [AppTab] {
-        settings.visibleTabs
+        settings.visibleTabs.filter { $0 != .music }
             + (usesTabletNavigation ? sidebarHomeTabs + sidebarLibraryTabs : [])
     }
 
     private var displayedPrimaryTabs: [AppTab] {
-        guard usesTabletNavigation, settings.visibleTabs.contains(.search) else { return settings.visibleTabs }
-        return [.search] + settings.visibleTabs.filter { $0 != .search }
+        let visibleTabs = settings.visibleTabs.filter { $0 != .music }
+        guard usesTabletNavigation, visibleTabs.contains(.search) else { return visibleTabs }
+        return [.search] + visibleTabs.filter { $0 != .search }
     }
 
     private var tabs: some View {
@@ -487,9 +431,6 @@ struct ContentView: View {
                 .toolbar {
                     primaryToolbar(for: tab)
                 }
-                .navigationDestination(for: ContentRoute.self) { route in
-                    contentDestination(for: route)
-                }
                 .musicDestinations(in: musicNavigationNamespace)
         }
     }
@@ -539,25 +480,6 @@ struct ContentView: View {
         for tab: AppTab
     ) -> some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
-            if library.isLoggedIn {
-                Button {
-                    navigate(to: .privateMessages, in: tab)
-                } label: {
-                    MusicToolbarSymbol(systemName: "bubble.left.and.bubble.right")
-                }
-                .accessibilityLabel("ui.messages.private.title")
-                .accessibilityHint("ui.messages.private.open_hint")
-                .accessibilityIdentifier("navigation-private-messages")
-            }
-
-            Button {
-                navigate(to: .songRecognition, in: tab)
-            } label: {
-                MusicToolbarSymbol(systemName: "waveform")
-            }
-            .accessibilityLabel("ui.recognition.title")
-            .accessibilityIdentifier("navigation-recognition")
-
             if !usesTabletNavigation {
                 Button {
                     presentedSheet = .settings
@@ -566,18 +488,6 @@ struct ContentView: View {
                 }
                 .accessibilityLabel(accountToolbarAccessibilityLabel)
             }
-        }
-    }
-
-    @ViewBuilder
-    private func contentDestination(
-        for route: ContentRoute
-    ) -> some View {
-        switch route {
-        case .privateMessages:
-            NeteasePrivateMessagesView()
-        case .songRecognition:
-            SongRecognitionView()
         }
     }
 
@@ -668,15 +578,6 @@ struct ContentView: View {
         guard let route = pendingMusicRoute else { return }
         pendingMusicRoute = nil
         navigate(to: route)
-    }
-
-    private func navigate(
-        to route: ContentRoute,
-        in tab: AppTab
-    ) {
-        var path = navigationPaths[tab] ?? NavigationPath()
-        path.append(route)
-        navigationPaths[tab] = path
     }
 
     private func navigate(to route: MusicRoute) {

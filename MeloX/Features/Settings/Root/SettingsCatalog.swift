@@ -12,7 +12,6 @@ enum SettingsRoute: Hashable {
     case content
     case storage
     case skylineLyrics
-    case floatingLyrics
     case developer
     case about
 }
@@ -83,13 +82,6 @@ enum SettingsCatalog {
                     subtitle: L10n.string("ui.settings.catalog.skyline.subtitle"),
                     systemImage: "rectangle.landscape.rotate",
                     keywords: L10n.keywords("ui.settings.catalog.skyline.keywords")
-                ),
-                SettingsCatalogItem(
-                    route: .floatingLyrics,
-                    title: L10n.string("ui.settings.catalog.floating.title"),
-                    subtitle: L10n.string("ui.settings.catalog.floating.subtitle"),
-                    systemImage: "pip",
-                    keywords: L10n.keywords("ui.settings.catalog.floating.keywords")
                 ),
             ]
         ),
