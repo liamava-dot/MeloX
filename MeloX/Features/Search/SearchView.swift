@@ -169,6 +169,7 @@ struct SearchView: View {
                     ProgressView("ui.search.searching")
                     Spacer()
                 }
+                .listRowSeparator(.hidden)
             }
 
             switch scope {
