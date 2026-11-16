@@ -13,14 +13,10 @@ IPA_PATH="$BUILD/MeloX-iOS-unsigned.ipa"
 RELEASE_NOTES_PATH="$BUILD/ReleaseNotes.json"
 RELEASE_NOTES_MARKDOWN_PATH="$BUILD/ReleaseNotes.md"
 TEMPORARY_PROJECT=""
-TEMPORARY_WATCH_INFO=""
 
 cleanup_temporary_build_inputs() {
   if [[ -n "$TEMPORARY_PROJECT" && -d "$TEMPORARY_PROJECT" ]]; then
     rm -rf -- "$TEMPORARY_PROJECT"
-  fi
-  if [[ -n "$TEMPORARY_WATCH_INFO" && -f "$TEMPORARY_WATCH_INFO" ]]; then
-    rm -f -- "$TEMPORARY_WATCH_INFO"
   fi
 }
 
@@ -35,15 +31,13 @@ case "$BUILD_VARIANT" in
     # GitHub CI、Release 和 Telegram 继续使用原有发布身份。只修改临时
     # xcodeproj/Info.plist 副本，避免污染当前用于 TestFlight 的项目配置。
     TEMPORARY_PROJECT="$ROOT/.MeloX-Legacy-Build-$$.xcodeproj"
-    TEMPORARY_WATCH_INFO="$BUILD/MeloXWatch-Legacy-Info-$$.plist"
 
-    if [[ -e "$TEMPORARY_PROJECT" || -e "$TEMPORARY_WATCH_INFO" ]]; then
+    if [[ -e "$TEMPORARY_PROJECT" ]]; then
       echo "Temporary build input already exists; refusing to overwrite / 临时构建输入已存在，拒绝覆盖"
       exit 1
     fi
 
     ditto --norsrc "$PROJECT" "$TEMPORARY_PROJECT"
-    ditto --norsrc "$ROOT/MeloXWatch/Info.plist" "$TEMPORARY_WATCH_INFO"
 
     # Scheme containers must follow the renamed project in the build copy.
     TEMPORARY_PROJECT_NAME="$(basename "$TEMPORARY_PROJECT")"
@@ -55,22 +49,16 @@ case "$BUILD_VARIANT" in
     sed -i '' \
       -e 's/azki\.moye\.MeloX/moye.MeloX/g' \
       -e 's/LAW363CUU8/YG7LA7A4T5/g' \
-      -e "s#INFOPLIST_FILE = MeloXWatch/Info.plist;#INFOPLIST_FILE = \"$TEMPORARY_WATCH_INFO\";#g" \
       "$TEMPORARY_PROJECT/project.pbxproj"
-    /usr/libexec/PlistBuddy \
-      -c "Set :WKCompanionAppBundleIdentifier moye.MeloX" \
-      "$TEMPORARY_WATCH_INFO"
 
     PROJECT="$TEMPORARY_PROJECT"
     EXPECTED_APP_BUNDLE_ID="moye.MeloX"
     EXPECTED_WIDGET_BUNDLE_ID="moye.MeloX.LyricsWidget"
-    EXPECTED_WATCH_BUNDLE_ID="moye.MeloX.watchkitapp"
     ;;
   testflight)
     # TestFlight 使用项目当前的 App Store Connect 身份。
     EXPECTED_APP_BUNDLE_ID="azki.moye.MeloX"
     EXPECTED_WIDGET_BUNDLE_ID="azki.moye.MeloX.LyricsWidget"
-    EXPECTED_WATCH_BUNDLE_ID="azki.moye.MeloX.watchkitapp"
     ;;
   *)
     echo "Unknown MELOX_BUILD_BUNDLE_VARIANT / 未知构建变体：${BUILD_VARIANT}"
@@ -110,7 +98,7 @@ if [[ ! -f "$APP_PATH/ReleaseNotes.json" || ! -f "$APP_PATH/ReleaseNotes.md" ]];
 fi
 
 WIDGET_PATH="$APP_PATH/PlugIns/MeloXLyricsWidget.appex"
-WATCH_PATH="$APP_PATH/Watch/MeloX Watch App.app"
+# This iOS-only branch does not embed a Watch app.
 
 assert_bundle_identifier() {
   local bundle_path="$1"
@@ -134,21 +122,6 @@ assert_bundle_identifier() {
 
 assert_bundle_identifier "$APP_PATH" "$EXPECTED_APP_BUNDLE_ID" "MeloX"
 assert_bundle_identifier "$WIDGET_PATH" "$EXPECTED_WIDGET_BUNDLE_ID" "MeloXLyricsWidget"
-assert_bundle_identifier "$WATCH_PATH" "$EXPECTED_WATCH_BUNDLE_ID" "MeloX Watch App"
-
-if [[ "$BUILD_VARIANT" == "legacy" ]]; then
-  WATCH_COMPANION_BUNDLE_ID="$(
-    /usr/libexec/PlistBuddy \
-      -c 'Print :WKCompanionAppBundleIdentifier' \
-      "$WATCH_PATH/Info.plist"
-  )"
-  if [[ "$WATCH_COMPANION_BUNDLE_ID" != "$EXPECTED_APP_BUNDLE_ID" ]]; then
-    echo "Watch Companion Bundle ID does not match legacy requirements / Bundle ID 不符合 legacy 构建要求"
-    echo "Expected / 期望：$EXPECTED_APP_BUNDLE_ID"
-    echo "Actual / 实际：$WATCH_COMPANION_BUNDLE_ID"
-    exit 1
-  fi
-fi
 
 ditto --norsrc "$APP_PATH/ReleaseNotes.json" "$RELEASE_NOTES_PATH"
 ditto --norsrc "$APP_PATH/ReleaseNotes.md" "$RELEASE_NOTES_MARKDOWN_PATH"

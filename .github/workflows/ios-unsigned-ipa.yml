@@ -7,12 +7,12 @@ on:
       - personal/ios
     paths:
       - 'MeloX/**'
-      - 'MeloXWatch/**'
       - 'MeloXWatchShared/**'
       - 'MeloXLyricsWidget/**'
       - 'MeloXLiveActivityShared/**'
       - 'MeloXLocalization/**'
       - 'MeloX.xcodeproj/**'
+      - 'build_ios_unsigned.sh'
       - '.github/workflows/ios-unsigned-ipa.yml'
 
 permissions:
@@ -35,38 +35,16 @@ jobs:
           test "$(xcodebuild -version | head -n 1)" = "Xcode 27.1"
           xcodebuild -list -project MeloX.xcodeproj
 
-      - name: Build unsigned iOS app
+      - name: Build unsigned iOS IPA (downloads enabled)
         shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild \
-            -project MeloX.xcodeproj \
-            -scheme MeloX \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$RUNNER_TEMP/MeloXDerivedData" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build
-
-      - name: Package unsigned IPA
-        shell: bash
-        run: |
-          set -euo pipefail
-          APP="$RUNNER_TEMP/MeloXDerivedData/Build/Products/Release-iphoneos/MeloX.app"
-          test -d "$APP"
-          mkdir -p "$RUNNER_TEMP/ipa/Payload"
-          ditto "$APP" "$RUNNER_TEMP/ipa/Payload/MeloX.app"
-          cd "$RUNNER_TEMP/ipa"
-          /usr/bin/zip -qry "$GITHUB_WORKSPACE/MeloX-unsigned.ipa" Payload
-          test -s "$GITHUB_WORKSPACE/MeloX-unsigned.ipa"
+        env:
+          MELOX_BUILD_BUNDLE_VARIANT: legacy
+        run: bash ./build_ios_unsigned.sh
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
           name: MeloX-unsigned-ipa
-          path: MeloX-unsigned.ipa
+          path: build/MeloX-iOS-unsigned.ipa
           if-no-files-found: error
           retention-days: 14

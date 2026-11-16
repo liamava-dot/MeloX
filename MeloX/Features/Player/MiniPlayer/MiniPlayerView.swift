@@ -93,7 +93,8 @@ struct MiniPlayerView: View {
             .padding(.vertical, isInline ? 3 : 6)
             .frame(maxWidth: .infinity)
             .contentShape(.rect)
-            .simultaneousGesture(trackSwipeGesture)
+            // Prioritize horizontal swipes over the expand button's tap.
+            .highPriorityGesture(trackSwipeGesture)
             .accessibilityAction(named: L10n.string("ui.player.previous")) {
                 Task { await player.previous() }
             }
@@ -114,8 +115,12 @@ struct MiniPlayerView: View {
     private var trackSwipeGesture: some Gesture {
         DragGesture(minimumDistance: 28)
             .onEnded { value in
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                if value.translation.width < 0 {
+                let horizontalDistance = value.translation.width
+                guard abs(horizontalDistance) >= 35,
+                      abs(horizontalDistance) > abs(value.translation.height) else {
+                    return
+                }
+                if horizontalDistance < 0 {
                     Task { await player.next() }
                 } else {
                     Task { await player.previous() }
