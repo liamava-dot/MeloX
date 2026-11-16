@@ -7,6 +7,7 @@ struct SearchView: View {
     @Environment(AppSettings.self) private var settings
 
     @State private var query = ""
+    @State private var submittedQuery: String?
     @State private var suggestions: [String] = []
     @State private var resultCache = SearchResultCache()
     @State private var scope: SearchKind = .songs
@@ -26,6 +27,8 @@ struct SearchView: View {
         Group {
             if trimmedQuery.isEmpty {
                 SearchDiscoveryView()
+            } else if !isSearchSubmitted {
+                Color.clear
             } else if let recognizedLink {
                 linkResult(for: recognizedLink)
             } else {
@@ -39,13 +42,20 @@ struct SearchView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: "ui.search.prompt"
         )
+        .onSubmit(of: .search) {
+            submitSearch(query)
+        }
         .searchSuggestions {
             if settings.searchSuggestionsEnabled {
                 ForEach(suggestions, id: \.self) { suggestion in
-                    Label {
-                        Text(verbatim: suggestion)
-                    } icon: {
-                        Image(systemName: "magnifyingglass")
+                    Button {
+                        submitSearch(suggestion)
+                    } label: {
+                        Label {
+                            Text(verbatim: suggestion)
+                        } icon: {
+                            Image(systemName: "magnifyingglass")
+                        }
                     }
                     .searchCompletion(suggestion)
                 }
@@ -60,7 +70,7 @@ struct SearchView: View {
             }
         }
         .overlay {
-            if !trimmedQuery.isEmpty, case .failed(let message) = phase {
+            if isSearchSubmitted, case .failed(let message) = phase {
                 ContentUnavailableView(
                     recognizedLink == nil
                         ? L10n.string("ui.search.failed")
@@ -70,8 +80,8 @@ struct SearchView: View {
                         : "link.badge.plus",
                     description: Text(message)
                 )
-            } else if recognizedLink == nil,
-                      !trimmedQuery.isEmpty,
+            } else if isSearchSubmitted,
+                      recognizedLink == nil,
                       phase == .loaded,
                       resultIsEmpty {
                 ContentUnavailableView.search(text: query)
@@ -97,10 +107,24 @@ struct SearchView: View {
         } message: {
             Text(library.errorMessage ?? L10n.string("ui.common.unknown_error"))
         }
-        .task(id: SearchRequest(query: query, kind: scope)) {
-            let request = SearchRequest(query: query, kind: scope)
+        .task(id: SearchRequest(query: submittedQuery ?? "", kind: scope)) {
+            guard let submittedQuery, !submittedQuery.isEmpty else { return }
+            let request = SearchRequest(query: submittedQuery, kind: scope)
             guard completedRequest != request else { return }
             await search(request)
+        }
+        .onChange(of: query) { _, newQuery in
+            let keywords = newQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard keywords == submittedQuery else {
+                submittedQuery = nil
+                suggestions = []
+                clearResults()
+                recognizedLink = nil
+                linkedSong = nil
+                completedRequest = nil
+                phase = .loaded
+                return
+            }
         }
         .onChange(
             of: settings.isContentFeatureEnabled(.podcasts)
@@ -115,11 +139,15 @@ struct SearchView: View {
         suggestions = []
         let keywords = trimmedQuery
         guard settings.searchSuggestionsEnabled, !keywords.isEmpty,
+              submittedQuery != keywords,
               NeteaseMusicLinkParser.parse(keywords) == nil else { return }
         do {
             try await Task.sleep(for: .milliseconds(300))
+            try Task.checkCancellation()
+            guard submittedQuery != keywords else { return }
             let loaded = try await api.searchSuggestions(keywords)
             try Task.checkCancellation()
+            guard submittedQuery != keywords else { return }
             suggestions = loaded
         } catch {
             return
@@ -260,6 +288,19 @@ struct SearchView: View {
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isSearchSubmitted: Bool {
+        !trimmedQuery.isEmpty && submittedQuery == trimmedQuery
+    }
+
+    private func submitSearch(_ value: String) {
+        let keywords = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !keywords.isEmpty else { return }
+        suggestions = []
+        query = keywords
+        guard submittedQuery != keywords else { return }
+        submittedQuery = keywords
     }
 
     private var resultIsEmpty: Bool {
