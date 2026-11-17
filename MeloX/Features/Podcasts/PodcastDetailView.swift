@@ -69,11 +69,6 @@ struct PodcastDetailView: View {
             prompt: Text("ui.podcasts.search_prompt")
         )
         .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(
-            interfaceColorScheme,
-            for: .navigationBar,
-            .tabBar
-        )
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -88,7 +83,6 @@ struct PodcastDetailView: View {
                 .accessibilityLabel("ui.podcasts.episode_order")
             }
         }
-        .environment(\.colorScheme, interfaceColorScheme)
         .task(
             id: PodcastDetailLoadRequest(
                 order: order,
@@ -156,10 +150,6 @@ struct PodcastDetailView: View {
                 prefersDarkAppearance:
                     systemColorScheme == .dark
             )
-    }
-
-    private var interfaceColorScheme: ColorScheme {
-        resolvedPalette.colorScheme
     }
 
     private var artworkTransitionAnimation: Animation? {

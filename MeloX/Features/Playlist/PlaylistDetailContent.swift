@@ -43,7 +43,6 @@ struct PlaylistDetailContent: View {
                     playlist: playlist,
                     summary: toplistSummary,
                     artworkURL: artworkURL,
-                    palette: palette,
                     isPreparingPlayback: isPreparingPlayback,
                     onPlayAll: onPlayAll
                 )
@@ -244,7 +243,6 @@ private struct ToplistDetailHero: View {
     let playlist: Playlist
     let summary: Playlist?
     let artworkURL: URL?
-    let palette: ArtworkDetailPalette
     let isPreparingPlayback: Bool
     let onPlayAll: (Bool) async -> Void
 
@@ -276,18 +274,9 @@ private struct ToplistDetailHero: View {
         VStack(spacing: 0) {
             ArtworkImage(url: artworkURL, cornerRadius: 0)
                 .containerRelativeFrame(.horizontal)
-                .overlay(alignment: .bottom) {
-                    LinearGradient(
-                        colors: [
-                            .clear,
-                            palette.backgroundColor.opacity(0.34),
-                            palette.backgroundColor,
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 126)
-                }
+                // Blend into the scrolling blurred continuation rather than
+                // fading directly into the much darker reading surface.
+                .mask { MusicCollectionArtworkFade(start: 0.64) }
 
             Text(playlist.name)
                 .font(.title2.weight(.bold))
@@ -482,46 +471,38 @@ struct MusicCollectionArtworkBackdrop: View {
     let blurredArtworkImage: CGImage?
     let palette: ArtworkDetailPalette
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                palette.backgroundColor
+                LinearGradient(
+                    stops: [
+                        .init(color: palette.backgroundColor(for: colorScheme, nearArtwork: true), location: 0),
+                        .init(color: palette.backgroundColor(for: colorScheme), location: 0.85),
+                        .init(color: palette.backgroundColor(for: colorScheme), location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
 
                 if let blurredArtworkImage {
                     Image(decorative: blurredArtworkImage, scale: 1)
                         .resizable()
-                        .scaledToFill()
+                        // Stretch the low-resolution blur instead of cropping a
+                        // narrow vertical strip out of a square cover on phones.
                         .frame(width: proxy.size.width, height: proxy.size.height)
-                        .opacity(0.22)
+                        .colorMultiply(colorScheme == .dark ? Color(white: 0.5) : .white)
+                        .opacity(colorScheme == .dark ? 0.5 : 0.24)
+                        .mask { MusicCollectionArtworkFade() }
                         .transition(.opacity)
                 }
-
-                LinearGradient(
-                    colors: backdropOverlayColors,
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .clipped()
         }
         .ignoresSafeArea()
         .accessibilityHidden(true)
-    }
-
-    private var backdropOverlayColors: [Color] {
-        if palette.prefersDarkAppearance {
-            return [
-                .black.opacity(0.08),
-                .black.opacity(0.24),
-                .black.opacity(0.40),
-            ]
-        }
-        return [
-            .white.opacity(0.06),
-            .white.opacity(0.16),
-            .white.opacity(0.30),
-        ]
     }
 }
 

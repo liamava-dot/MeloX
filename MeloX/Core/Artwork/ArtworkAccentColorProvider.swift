@@ -3,17 +3,14 @@ import CoreImage.CIFilterBuiltins
 import Foundation
 
 struct ArtworkDetailPalette: Equatable, Sendable {
-    let backgroundRGB: SIMD3<Double>
+    /// Unadjusted cover color, independent of the application appearance.
+    let sourceRGB: SIMD3<Double>
     let accentRGB: SIMD3<Double>
-    let prefersDarkAppearance: Bool
 
-    nonisolated static func fallback(prefersDarkAppearance: Bool) -> Self {
+    nonisolated static func fallback(prefersDarkAppearance _: Bool) -> Self {
         Self(
-            backgroundRGB: SIMD3<Double>(
-                repeating: prefersDarkAppearance ? 0.16 : 0.88
-            ),
-            accentRGB: ArtworkAccentColorProvider.fallback,
-            prefersDarkAppearance: prefersDarkAppearance
+            sourceRGB: SIMD3<Double>(repeating: 0.5),
+            accentRGB: ArtworkAccentColorProvider.fallback
         )
     }
 }
@@ -137,7 +134,8 @@ actor ArtworkAccentColorProvider {
             let preparedImage = downsampled(image)
             let assets = ArtworkDetailAssets(
                 palette: makeDetailPalette(
-                    from: averageColor(of: preparedImage)
+                    from: representativeColor(of: preparedImage),
+                    accentSource: averageColor(of: preparedImage)
                 ),
                 flowingLightPalette:
                     makeFlowingLightPalette(
@@ -270,23 +268,68 @@ actor ArtworkAccentColorProvider {
         )
     }
 
-    private func makeDetailPalette(
-        from source: SIMD3<Double>
-    ) -> ArtworkDetailPalette {
-        let luminance = relativeLuminance(source)
-        let prefersDarkAppearance = luminance < 0.52
-        let backgroundRGB: SIMD3<Double>
+    /// Population-weighted color buckets retain a cover's dominant hue rather than
+    /// averaging complementary colors into gray. Chroma has a bounded bonus so a
+    /// tiny saturated logo cannot outweigh the rest of the artwork. Neutral covers
+    /// use their area average to preserve their original grayscale balance.
+    private func representativeColor(of image: CIImage) -> SIMD3<Double> {
+        let extent = image.extent.integral
+        guard !extent.isEmpty, !extent.isInfinite else { return Self.fallback }
+        let width = Int(extent.width)
+        let height = Int(extent.height)
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        context.render(
+            image,
+            toBitmap: &pixels,
+            rowBytes: width * 4,
+            bounds: extent,
+            format: .RGBA8,
+            colorSpace: colorSpace
+        )
 
-        if prefersDarkAppearance {
-            backgroundRGB = source * 0.38 + SIMD3<Double>(repeating: 0.055) * 0.62
-        } else {
-            backgroundRGB = source * 0.30 + SIMD3<Double>(repeating: 0.94) * 0.70
+        let bucketCount = 8 * 8 * 8
+        var weights = [Double](repeating: 0, count: bucketCount)
+        var sums = [SIMD3<Double>](repeating: .zero, count: bucketCount)
+        var average = SIMD3<Double>.zero
+        var totalWeight = 0.0
+        var chromaTotal = 0.0
+        for offset in stride(from: 0, to: pixels.count, by: 4) {
+            let alpha = Double(pixels[offset + 3]) / 255
+            guard alpha > 0.01 else { continue }
+            // Core Image renders premultiplied RGBA; ignore transparent borders.
+            let color = clamped(SIMD3<Double>(
+                Double(pixels[offset]),
+                Double(pixels[offset + 1]),
+                Double(pixels[offset + 2])
+            ) / (255 * alpha))
+            let chroma = max(color.x, color.y, color.z) - min(color.x, color.y, color.z)
+            let weight = alpha * (1 + 2 * chroma)
+            let red = min(Int(color.x * 8), 7)
+            let green = min(Int(color.y * 8), 7)
+            let blue = min(Int(color.z * 8), 7)
+            let bucket = red * 64 + green * 8 + blue
+            weights[bucket] += weight
+            sums[bucket] += color * weight
+            average += color * alpha
+            chromaTotal += chroma * alpha
+            totalWeight += alpha
         }
+        guard totalWeight > 0 else { return Self.fallback }
+        average /= totalWeight
+        guard chromaTotal / totalWeight > 0.04,
+              let dominant = weights.indices.max(by: { weights[$0] < weights[$1] }),
+              weights[dominant] > 0 else { return average }
+        return clamped(sums[dominant] / weights[dominant] * 0.75 + average * 0.25)
+    }
 
-        return ArtworkDetailPalette(
-            backgroundRGB: clamped(backgroundRGB),
-            accentRGB: readableAccent(source),
-            prefersDarkAppearance: prefersDarkAppearance
+    private func makeDetailPalette(
+        from source: SIMD3<Double>,
+        accentSource: SIMD3<Double>
+    ) -> ArtworkDetailPalette {
+        ArtworkDetailPalette(
+            sourceRGB: clamped(source),
+            // Preserve the existing accent used by player and other consumers.
+            accentRGB: readableAccent(accentSource)
         )
     }
 

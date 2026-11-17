@@ -42,6 +42,14 @@ struct MusicCollectionDetailLayoutView<Header: View, Tracks: View>: View {
                             .padding(.horizontal, metrics.usesAdaptiveHeader ? 12 : 0)
                     }
                     .padding(.bottom, 32)
+                    .background(alignment: .top) {
+                        if extendsPhoneHeaderUnderToolbar && !metrics.usesAdaptiveHeader {
+                            ToplistArtworkContinuation(
+                                blurredArtworkImage: blurredBackdropImage,
+                                width: proxy.size.width
+                            )
+                        }
+                    }
                 }
                 .scrollIndicators(.hidden)
                 .refreshable { await onRefresh() }
@@ -58,6 +66,30 @@ struct MusicCollectionDetailLayoutView<Header: View, Tracks: View>: View {
     @ViewBuilder
     private func backdrop(metrics: MusicCollectionDetailMetrics) -> some View {
         MusicCollectionArtworkBackdrop(blurredArtworkImage: blurredBackdropImage, palette: palette)
+    }
+}
+
+/// This wash shares the hero's scroll coordinates. It carries the cover beyond
+/// the square's edge and fades under the metadata/actions before reaching the
+/// regular reading surface. It never paints an opaque terminal color.
+private struct ToplistArtworkContinuation: View {
+    let blurredArtworkImage: CGImage?
+    let width: CGFloat
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        if let blurredArtworkImage {
+            Image(decorative: blurredArtworkImage, scale: 1)
+                .resizable()
+                .frame(width: width, height: width * 1.9)
+                .colorMultiply(colorScheme == .dark ? Color(white: 0.52) : .white)
+                .opacity(colorScheme == .dark ? 0.70 : 0.18)
+                .mask { MusicCollectionArtworkFade(start: 0.28) }
+                .clipped()
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 }
 

@@ -11,7 +11,7 @@ struct PlaylistDetailView: View {
     @Environment(PlayerStore.self) private var player
     @Environment(DownloadStore.self) private var downloads
     @Environment(AppSettings.self) private var settings
-    @Environment(\.colorScheme) private var systemColorScheme
+    @Environment(\.colorScheme) private var appColorScheme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.setTabViewBottomAccessorySuppressed)
     private var setTabViewBottomAccessorySuppressed
@@ -149,7 +149,6 @@ struct PlaylistDetailView: View {
             )
         )
         .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(interfaceColorScheme, for: .navigationBar, .tabBar)
         .toolbar {
             if downloadsEnabled,
                downloadCoordinator.isSelecting {
@@ -165,7 +164,6 @@ struct PlaylistDetailView: View {
                 : .automatic,
             for: .tabBar
         )
-        .environment(\.colorScheme, interfaceColorScheme)
         .onAppear {
             updateTabViewBottomAccessoryVisibility()
         }
@@ -195,7 +193,7 @@ struct PlaylistDetailView: View {
 
             let loadedAssets = await ArtworkAccentColorProvider.shared.detailAssets(
                 for: artworkURL,
-                fallbackPrefersDarkAppearance: systemColorScheme == .dark
+                fallbackPrefersDarkAppearance: appColorScheme == .dark
             )
             guard !Task.isCancelled else { return }
             let backdropAlreadyResolved = blurredBackdropImage != nil
@@ -293,11 +291,7 @@ struct PlaylistDetailView: View {
 
     private var resolvedPalette: ArtworkDetailPalette {
         artworkPalette
-            ?? .fallback(prefersDarkAppearance: systemColorScheme == .dark)
-    }
-
-    private var interfaceColorScheme: ColorScheme {
-        resolvedPalette.colorScheme
+            ?? .fallback(prefersDarkAppearance: appColorScheme == .dark)
     }
 
     private var artworkTransitionAnimation: Animation? {

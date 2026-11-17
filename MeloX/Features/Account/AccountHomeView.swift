@@ -49,11 +49,9 @@ struct AccountHomeView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(interfaceColorScheme, for: .navigationBar, .tabBar)
         .toolbar {
             accountToolbar
         }
-        .environment(\.colorScheme, interfaceColorScheme)
         .task {
             await load()
         }
@@ -69,10 +67,6 @@ struct AccountHomeView: View {
     private var resolvedPalette: ArtworkDetailPalette {
         artworkPalette
             ?? .fallback(prefersDarkAppearance: systemColorScheme == .dark)
-    }
-
-    private var interfaceColorScheme: ColorScheme {
-        resolvedPalette.colorScheme
     }
 
     private var homepageURL: URL {
