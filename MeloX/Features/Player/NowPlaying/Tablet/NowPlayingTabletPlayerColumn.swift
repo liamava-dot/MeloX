@@ -47,16 +47,22 @@ private struct NowPlayingTabletMetadata: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 10) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(song.name)
+                NowPlayingSongTitle(song: song)
                     .font(.title2.weight(.bold))
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text(
-                    [song.artistText, song.album?.name]
-                        .compactMap { $0 }
-                        .joined(separator: L10n.string("ui.common.title_detail_separator"))
-                )
+                HStack(spacing: 0) {
+                    NowPlayingSongArtists(song: song)
+                        .layoutPriority(1)
+
+                    if let album = song.album {
+                        Text(
+                            L10n.string("ui.common.title_detail_separator")
+                                + album.name
+                        )
+                    }
+                }
                 .font(.body)
                 .foregroundStyle(.white.opacity(0.6))
                 .lineLimit(1)

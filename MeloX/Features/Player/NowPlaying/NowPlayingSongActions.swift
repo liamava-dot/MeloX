@@ -66,9 +66,6 @@ struct NowPlayingSongActions: View {
     }
     private var songMenu: some View {
         Menu {
-            lyricsSourceMenu
-
-            Divider()
             Button {
                 presentedSheet = .sleepTimer
             } label: {
@@ -223,28 +220,6 @@ struct NowPlayingSongActions: View {
         .tint(.white)
         .menuOrder(.fixed)
         .accessibilityLabel("ui.common.more")
-    }
-
-    private var lyricsSourceMenu: some View {
-        Menu {
-            Picker(
-                "ui.settings.lyrics.content.default_source",
-                selection: Binding(
-                    get: { settings.lyricsSourcePreference },
-                    set: { settings.lyricsSourcePreference = $0 }
-                )
-            ) {
-                ForEach(LyricSourcePreference.allCases) { preference in
-                    Text(preference.title).tag(preference)
-                }
-            }
-        } label: {
-            Label(
-                "ui.settings.lyrics.content.default_source",
-                systemImage: "text.quote"
-            )
-        }
-        .accessibilityValue(settings.lyricsSourcePreference.title)
     }
 }
 private enum NowPlayingSongSheet: Identifiable {

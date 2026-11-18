@@ -69,7 +69,7 @@ struct NowPlayingSongHeader: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text(song.name)
+                    NowPlayingSongTitle(song: song)
                         .font(
                             usesReferenceLayout
                                 ? .title3.weight(.semibold)
@@ -82,10 +82,13 @@ struct NowPlayingSongHeader: View {
                     ListenTogetherNowPlayingBadge()
                 }
 
-                Text(artistText)
-                    .font(usesReferenceLayout ? .title3 : .subheadline)
-                    .foregroundStyle(.white.opacity(0.64))
-                    .lineLimit(1)
+                NowPlayingSongArtists(
+                    song: song,
+                    usesAmpersand: usesReferenceLayout
+                )
+                .font(usesReferenceLayout ? .title3 : .subheadline)
+                .foregroundStyle(.white.opacity(0.64))
+                .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -117,11 +120,6 @@ struct NowPlayingSongHeader: View {
     private var artworkSize: CGFloat {
         usesReferenceLayout ? Self.referenceHeight : 68
     }
-
-    private var artistText: String {
-        guard usesReferenceLayout else { return song.artistText }
-        return song.artists.map(\.name).joined(separator: " & ")
-    }
 }
 
 struct NowPlayingLandscapeSongHeader: View {
@@ -140,7 +138,7 @@ struct NowPlayingLandscapeSongHeader: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text(song.name)
+                    NowPlayingSongTitle(song: song)
                         .font(.headline)
                         .lineLimit(1)
                         .layoutPriority(1)
@@ -149,7 +147,7 @@ struct NowPlayingLandscapeSongHeader: View {
                     ListenTogetherNowPlayingBadge()
                 }
 
-                Text(song.artistText)
+                NowPlayingSongArtists(song: song)
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.64))
                     .lineLimit(1)
@@ -174,5 +172,68 @@ struct NowPlayingLandscapeSongHeader: View {
             NowPlayingSongActions(song: song)
         }
         .frame(height: 52)
+    }
+}
+
+struct NowPlayingSongTitle: View {
+    @Environment(\.openMusicRoute) private var openMusicRoute
+
+    let song: Song
+
+    var body: some View {
+        if !song.isPodcastProgram, let album = song.album, album.id > 0 {
+            Button {
+                openMusicRoute(.album(album))
+            } label: {
+                Text(song.name)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Text(song.name)
+        }
+    }
+}
+
+struct NowPlayingSongArtists: View {
+    @Environment(\.openMusicRoute) private var openMusicRoute
+
+    let song: Song
+    var usesAmpersand = false
+
+    var body: some View {
+        let artists = song.artists.filter { $0.id > 0 }
+        if song.isPodcastProgram || artists.isEmpty {
+            artistLabel
+        } else if artists.count == 1, let artist = artists.first {
+            Button {
+                openMusicRoute(.artist(artist.id))
+            } label: {
+                artistLabel
+            }
+            .buttonStyle(.plain)
+        } else {
+            Menu {
+                ForEach(artists) { artist in
+                    Button {
+                        openMusicRoute(.artist(artist.id))
+                    } label: {
+                        Text(artist.name)
+                    }
+                }
+            } label: {
+                artistLabel
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var artistLabel: some View {
+        Text(
+            usesAmpersand
+                ? song.artists.map(\.name).joined(separator: " & ")
+                : song.artistText
+        )
+        .contentShape(.rect)
     }
 }

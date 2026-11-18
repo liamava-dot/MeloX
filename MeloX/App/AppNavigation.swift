@@ -244,10 +244,15 @@ enum PlayerPresentation: Hashable, Identifiable {
 }
 
 extension View {
-    func musicDestinations(in namespace: Namespace.ID) -> some View {
+    func musicDestinations(in namespace: Namespace.ID? = nil) -> some View {
         navigationDestination(for: MusicRoute.self) { route in
-            MusicRouteDestination(route: route)
-                .musicNavigationTransition(for: route, in: namespace)
+            if let namespace {
+                MusicRouteDestination(route: route)
+                    .musicNavigationTransition(for: route, in: namespace)
+            } else {
+                MusicRouteDestination(route: route)
+                    .toolbarVisibility(.visible, for: .navigationBar)
+            }
         }
     }
 }

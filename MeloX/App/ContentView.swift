@@ -14,6 +14,7 @@ private struct HeartModeLaunchReadiness: Equatable {
 }
 
 struct ContentView: View {
+    @Environment(\.colorScheme) private var appColorScheme
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(PlayerStore.self) private var player
@@ -30,9 +31,9 @@ struct ContentView: View {
     )
     @State private var presentedSheet: ContentSheet?
     @State private var playerPresentation: PlayerPresentation?
+    @State private var playerNavigationPath: [MusicRoute] = []
     @State private var neteaseSharePresentation: NeteaseSharePresentation?
     @State private var nowPlayingSharePresentation: NeteaseSharePresentation?
-    @State private var pendingMusicRoute: MusicRoute?
     @State private var isTabViewBottomAccessorySuppressed = false
     @State private var hasRestoredPlayback = false
     @State private var hasHandledHeartModeLaunch = false
@@ -81,36 +82,11 @@ struct ContentView: View {
             )
             .fullScreenCover(
                 item: $playerPresentation,
-                onDismiss: finishPendingSongNavigation
+                onDismiss: { playerNavigationPath.removeAll() }
             ) { destination in
                 switch destination {
                 case .nowPlaying(let initialPage):
-                    NowPlayingView(initialPage: initialPage)
-                        .environment(
-                            \.openMusicRoute,
-                            OpenMusicRouteAction(action: openMusicRoute)
-                        )
-                        .environment(
-                            \.openNeteaseShare,
-                            OpenNeteaseShareAction { presentation in
-                                presentNeteaseShare(
-                                    presentation,
-                                    fromNowPlaying: true
-                                )
-                            }
-                        )
-                        .sheet(item: $nowPlayingSharePresentation) {
-                            presentation in
-                            NeteaseShareSheet(presentation: presentation)
-                        }
-                        .presentationBackground(.clear)
-                        .presentationContentInteraction(.resizes)
-                        .navigationTransition(
-                            .zoom(
-                                sourceID: playerTransitionID,
-                                in: playerTransitionNamespace
-                            )
-                        )
+                    playerNavigationStack(initialPage: initialPage)
                 }
             }
             .sheet(item: $neteaseSharePresentation) { presentation in
@@ -435,6 +411,41 @@ struct ContentView: View {
         }
     }
 
+    private func playerNavigationStack(initialPage: NowPlayingPage) -> some View {
+        NavigationStack(path: $playerNavigationPath) {
+            NowPlayingView(initialPage: initialPage) {
+                playerPresentation = nil
+            }
+            .environment(\.colorScheme, .dark)
+            .toolbarVisibility(.hidden, for: .navigationBar)
+            .musicDestinations()
+        }
+        .environment(
+            \.openMusicRoute,
+            OpenMusicRouteAction(action: openMusicRoute)
+        )
+        .environment(
+            \.openNeteaseShare,
+            OpenNeteaseShareAction { presentation in
+                presentNeteaseShare(presentation, fromNowPlaying: true)
+            }
+        )
+        .environment(
+            \.setTabViewBottomAccessorySuppressed,
+            SetTabViewBottomAccessorySuppressedAction()
+        )
+        .sheet(item: $nowPlayingSharePresentation) { presentation in
+            NeteaseShareSheet(presentation: presentation)
+        }
+        .preferredColorScheme(appColorScheme)
+        .interactiveDismissDisabled(!playerNavigationPath.isEmpty)
+        .presentationBackground(.clear)
+        .presentationContentInteraction(.resizes)
+        .navigationTransition(
+            .zoom(sourceID: playerTransitionID, in: playerTransitionNamespace)
+        )
+    }
+
     private func presentPlayer(page: NowPlayingPage? = nil) {
         if let page, settings.rememberNowPlayingPage {
             settings.rememberedNowPlayingPage = page.rawValue
@@ -544,12 +555,13 @@ struct ContentView: View {
     }
 
     private func openMusicRoute(_ route: MusicRoute) {
-        guard playerPresentation == nil else {
-            pendingMusicRoute = route
-            playerPresentation = nil
+        if playerPresentation != nil {
+            playerNavigationPath.append(route)
             return
         }
-        navigate(to: route)
+        var path = navigationPaths[selectedTab] ?? NavigationPath()
+        path.append(route)
+        navigationPaths[selectedTab] = path
     }
 
     private func openNeteaseShare(
@@ -572,17 +584,5 @@ struct ContentView: View {
                 neteaseSharePresentation = presentation
             }
         }
-    }
-
-    private func finishPendingSongNavigation() {
-        guard let route = pendingMusicRoute else { return }
-        pendingMusicRoute = nil
-        navigate(to: route)
-    }
-
-    private func navigate(to route: MusicRoute) {
-        var path = navigationPaths[selectedTab] ?? NavigationPath()
-        path.append(route)
-        navigationPaths[selectedTab] = path
     }
 }

@@ -130,7 +130,7 @@ struct NowPlayingArtworkPage: View {
                 HStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 8) {
-                            Text(song.name)
+                            NowPlayingSongTitle(song: song)
                                 .font(.title3.weight(.semibold))
                                 .lineLimit(1)
                                 .layoutPriority(1)
@@ -139,7 +139,7 @@ struct NowPlayingArtworkPage: View {
                             ListenTogetherNowPlayingBadge()
                         }
 
-                        Text(song.artistText)
+                        NowPlayingSongArtists(song: song)
                             .font(.title3)
                             .foregroundStyle(.white.opacity(0.64))
                             .lineLimit(1)

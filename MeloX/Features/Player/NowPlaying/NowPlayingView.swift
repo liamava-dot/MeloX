@@ -4,7 +4,6 @@ import UIKit
 struct NowPlayingView: View {
     private static let portraitHorizontalPadding: CGFloat = 32
 
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.accessibilityVoiceOverEnabled)
@@ -12,6 +11,8 @@ struct NowPlayingView: View {
     @Environment(PlayerStore.self) private var player
     @Environment(AppSettings.self) private var settings
     @Environment(LyricsStore.self) private var lyricsStore
+
+    private let onDismiss: () -> Void
 
     @State private var pageTransition: NowPlayingTransitionCoordinator
     @State private var showsLyricsControls = true
@@ -31,7 +32,8 @@ struct NowPlayingView: View {
         pageTransition.page
     }
 
-    init(initialPage: NowPlayingPage = .artwork) {
+    init(initialPage: NowPlayingPage = .artwork, onDismiss: @escaping () -> Void) {
+        self.onDismiss = onDismiss
         _pageTransition = State(
             initialValue: NowPlayingTransitionCoordinator(
                 initialPage: initialPage
@@ -71,7 +73,7 @@ struct NowPlayingView: View {
                             lyricError: lyricError,
                             highlightedLyricID: highlightedLyricID,
                             artworkNamespace: pageArtworkNamespace,
-                            onDismiss: { dismiss() },
+                            onDismiss: onDismiss,
                             onExpandLyrics: {
                                 showsLyricsControls = true
                                 showsFullScreenLyrics = true
@@ -88,7 +90,7 @@ struct NowPlayingView: View {
                             lyrics: lyrics,
                             errorMessage: lyricError,
                             highlightedLyricID: highlightedLyricID,
-                            onDismiss: { dismiss() },
+                            onDismiss: onDismiss,
                             onToggleInterface:
                                 toggleLyricsControls
                         )
@@ -103,7 +105,7 @@ struct NowPlayingView: View {
                             lyricError: lyricError,
                             highlightedLyricID: highlightedLyricID,
                             artworkNamespace: pageArtworkNamespace,
-                            onDismiss: { dismiss() },
+                            onDismiss: onDismiss,
                             onInterfaceInteraction:
                                 handleLyricsInterfaceInteraction,
                             onInterfaceVisibilityChange:
@@ -160,7 +162,6 @@ struct NowPlayingView: View {
             )
         }
         .keepsScreenAwake(keepsPlayerScreenAwake)
-        .preferredColorScheme(.dark)
         .task(id: beatAnalysisTaskID) {
             await loadBeatTimeline()
         }
@@ -480,15 +481,11 @@ struct NowPlayingView: View {
         .frame(maxWidth: .infinity)
         .frame(height: 34)
         .contentShape(.rect)
-        .onTapGesture {
-            dismiss()
-        }
+        .onTapGesture(perform: onDismiss)
         .accessibilityElement()
         .accessibilityLabel("ui.player.collapse")
         .accessibilityHint("ui.player.collapse_hint")
-        .accessibilityAction {
-            dismiss()
-        }
+        .accessibilityAction { onDismiss() }
     }
 
     private func pageContent(for song: Song) -> some View {
