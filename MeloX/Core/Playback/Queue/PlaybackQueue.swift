@@ -116,21 +116,13 @@ struct PlaybackQueue {
     }
 
     mutating func move(by offset: Int, wraps: Bool) -> Bool {
-        let order = isShuffled ? shuffledOrder : Array(songs.indices)
-        guard !order.isEmpty else { return false }
-        let position = isShuffled ? shuffledPosition : currentIndex
-        var destination = position + offset
-        if order.indices.contains(destination) {
-            // Continue in the existing order.
-        } else if wraps {
-            destination = offset > 0 ? 0 : order.count - 1
-        } else {
+        guard let destination = destinationPosition(by: offset, wraps: wraps) else {
             return false
         }
 
         if isShuffled {
             shuffledPosition = destination
-            currentIndex = order[destination]
+            currentIndex = shuffledOrder[destination]
         } else {
             currentIndex = destination
         }
@@ -138,10 +130,24 @@ struct PlaybackQueue {
     }
 
     func canMove(by offset: Int, wraps: Bool) -> Bool {
-        let order = isShuffled ? shuffledOrder : Array(songs.indices)
-        guard !order.isEmpty else { return false }
+        destinationPosition(by: offset, wraps: wraps) != nil
+    }
+
+    func adjacentIndex(by offset: Int, wraps: Bool) -> Int? {
+        guard let destination = destinationPosition(by: offset, wraps: wraps) else {
+            return nil
+        }
+        return isShuffled ? shuffledOrder[destination] : destination
+    }
+
+    private func destinationPosition(by offset: Int, wraps: Bool) -> Int? {
+        let count = isShuffled ? shuffledOrder.count : songs.count
+        guard count > 0 else { return nil }
         let position = isShuffled ? shuffledPosition : currentIndex
-        return order.indices.contains(position + offset) || wraps
+        let destination = position + offset
+        if (0..<count).contains(destination) { return destination }
+        guard wraps else { return nil }
+        return offset > 0 ? 0 : count - 1
     }
 
     mutating func toggleShuffle() {

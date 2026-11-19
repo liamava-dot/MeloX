@@ -667,6 +667,15 @@ final class PlayerStore {
         await moveToNext(recordingCurrentPlayback: true)
     }
 
+    func adjacentQueueIndex(by offset: Int) -> Int? {
+        if offset < 0, shouldRestartCurrentSong { return nil }
+        return playbackQueue.adjacentIndex(by: offset, wraps: repeatMode == .all)
+    }
+
+    private var shouldRestartCurrentSong: Bool {
+        settings.previousRestartsCurrentSong && progress > 5
+    }
+
     private func moveToNext(recordingCurrentPlayback: Bool) async {
         guard !queue.isEmpty else { return }
         if !playbackQueue.canMove(
@@ -695,7 +704,7 @@ final class PlayerStore {
 
     func previous() async {
         guard !queue.isEmpty else { return }
-        if settings.previousRestartsCurrentSong, progress > 5 {
+        if shouldRestartCurrentSong {
             seek(to: 0)
             return
         }
