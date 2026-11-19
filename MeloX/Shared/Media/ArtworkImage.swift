@@ -6,8 +6,10 @@ struct ArtworkImage: View {
     let url: URL?
     var cornerRadius: CGFloat = 10
     var aspectRatio: CGFloat = 1
+    var keepsPreviousImage = false
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var previousImage: Image? = nil
 
     var body: some View {
         GeometryReader { proxy in
@@ -15,11 +17,20 @@ struct ArtworkImage: View {
                 request: imageRequest(for: proxy.size),
                 transaction: Transaction(animation: imageLoadAnimation)
             ) { state in
-                content(image: state.image, hasError: state.error != nil)
-                    .frame(
-                        width: proxy.size.width,
-                        height: proxy.size.height
-                    )
+                content(
+                    image: state.image ?? previousImage,
+                    hasError: state.error != nil
+                )
+                .frame(
+                    width: proxy.size.width,
+                    height: proxy.size.height
+                )
+            }
+            .onCompletion { result in
+                guard keepsPreviousImage, case .success(let response) = result else {
+                    return
+                }
+                previousImage = Image(uiImage: response.image)
             }
             .onDisappear(.lowerPriority)
         }
@@ -43,7 +54,8 @@ struct ArtworkImage: View {
     }
 
     private var imageLoadAnimation: Animation? {
-        accessibilityReduceMotion ? nil : .easeOut(duration: 0.18)
+        guard !accessibilityReduceMotion, !keepsPreviousImage else { return nil }
+        return .easeOut(duration: 0.18)
     }
 
     @ViewBuilder

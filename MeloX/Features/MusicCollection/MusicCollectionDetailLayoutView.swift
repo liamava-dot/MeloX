@@ -95,6 +95,7 @@ private struct ToplistArtworkContinuation: View {
 
 struct AdaptiveMusicCollectionHero: View {
     let artworkURL: URL?
+    var keepsPreviousArtwork = false
     let title: String
     let subtitle: String
     let metadataText: String?
@@ -128,13 +129,17 @@ struct AdaptiveMusicCollectionHero: View {
     }
 
     private var artwork: some View {
-        ArtworkImage(url: artworkURL, cornerRadius: 14)
-            .frame(width: metrics.artworkSize, height: metrics.artworkSize)
-            .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
-            .accessibilityElement(children: .ignore)
-            .accessibilityHidden(false)
-            .accessibilityLabel(L10n.format("ui.song.artwork_accessibility", title))
-            .accessibilityIdentifier("collection-detail-artwork")
+        ArtworkImage(
+            url: artworkURL,
+            cornerRadius: 14,
+            keepsPreviousImage: keepsPreviousArtwork
+        )
+        .frame(width: metrics.artworkSize, height: metrics.artworkSize)
+        .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityHidden(false)
+        .accessibilityLabel(L10n.format("ui.song.artwork_accessibility", title))
+        .accessibilityIdentifier("collection-detail-artwork")
     }
 
     private var information: some View {

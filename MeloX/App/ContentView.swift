@@ -95,15 +95,10 @@ struct ContentView: View {
             .sheet(item: $presentedSheet) { destination in
                 switch destination {
                 case .settings:
-                    NavigationStack {
-                        SettingsView()
-                            .musicDestinations(
-                                in: musicNavigationNamespace
-                            )
-                    }
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.hidden)
-                    .presentationCornerRadius(32)
+                    SettingsNavigationStack()
+                        .presentationDetents([.large])
+                        .presentationDragIndicator(.hidden)
+                        .presentationCornerRadius(32)
                 }
             }
             .task {

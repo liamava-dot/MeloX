@@ -66,18 +66,6 @@ struct NowPlayingSongActions: View {
     }
     private var songMenu: some View {
         Menu {
-            Button {
-                presentedSheet = .sleepTimer
-            } label: {
-                Label(
-                    player.sleepTimer.isActive
-                        ? L10n.string("ui.sleep_timer.active")
-                        : L10n.string("ui.sleep_timer.title"),
-                    systemImage: "timer"
-                )
-            }
-
-            Divider()
             if let podcast = song.podcastMetadata {
                 Button {
                     player.addToPlaybackQueue(song)
@@ -99,6 +87,8 @@ struct NowPlayingSongActions: View {
                         )
                     }
                 }
+                Divider()
+                sleepTimerButton
             } else {
                 ControlGroup {
                     Button {
@@ -121,12 +111,12 @@ struct NowPlayingSongActions: View {
                                 : "star"
                         )
                     }
-                    Menu {
-                        NeteaseShareMenuContent(resource: .song(song))
-                    } label: {
+                    ShareLink(item: NeteaseShareResource.song(song).webURL) {
                         Label("ui.common.share", systemImage: "square.and.arrow.up")
                     }
                 }
+                sleepTimerButton
+                Divider()
                 Button {
                     presentedSheet = .comments(song)
                 } label: {
@@ -164,39 +154,6 @@ struct NowPlayingSongActions: View {
                     )
                 }
 
-                Divider()
-                if let album = song.album {
-                    Button {
-                        openMusicRoute(.album(album))
-                    } label: {
-                        Label(
-                            L10n.format("ui.album.go_to", album.name),
-                            systemImage: "music.note.list"
-                        )
-                    }
-                }
-                if let artist = song.artists.first, song.artists.count == 1 {
-                    Button {
-                        openMusicRoute(.artist(artist.id))
-                    } label: {
-                        Label(
-                            L10n.format("ui.artist.go_to", artist.name),
-                            systemImage: "music.microphone"
-                        )
-                    }
-                } else if !song.artists.isEmpty {
-                    Menu {
-                        ForEach(song.artists) { artist in
-                            Button {
-                                openMusicRoute(.artist(artist.id))
-                            } label: {
-                                Text(artist.name)
-                            }
-                        }
-                    } label: {
-                        Label("ui.artist.go_to_generic", systemImage: "music.microphone")
-                    }
-                }
                 if settings.beatNetDebugEnabled {
                     Divider()
                     Button {
@@ -220,6 +177,19 @@ struct NowPlayingSongActions: View {
         .tint(.white)
         .menuOrder(.fixed)
         .accessibilityLabel("ui.common.more")
+    }
+
+    private var sleepTimerButton: some View {
+        Button {
+            presentedSheet = .sleepTimer
+        } label: {
+            Label(
+                player.sleepTimer.isActive
+                    ? L10n.string("ui.sleep_timer.active")
+                    : L10n.string("ui.sleep_timer.title"),
+                systemImage: "timer"
+            )
+        }
     }
 }
 private enum NowPlayingSongSheet: Identifiable {

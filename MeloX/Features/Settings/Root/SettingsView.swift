@@ -1,5 +1,21 @@
 import SwiftUI
 
+struct SettingsNavigationStack: View {
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            SettingsView()
+                .musicDestinations()
+        }
+        .environment(\.musicNavigationNamespace, nil)
+        .environment(
+            \.openMusicRoute,
+            OpenMusicRouteAction { route in path.append(route) }
+        )
+    }
+}
+
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var settings

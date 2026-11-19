@@ -4,6 +4,7 @@ import UIKit
 struct PlaylistDetailContent: View {
     let playlist: Playlist
     let toplistSummary: Playlist?
+    let artworkURL: URL?
     let palette: ArtworkDetailPalette
     let blurredBackdropImage: CGImage?
     let searchQuery: String
@@ -27,10 +28,6 @@ struct PlaylistDetailContent: View {
         toplistSummary != nil || playlist.isOfficialToplist
     }
 
-    private var artworkURL: URL? {
-        playlist.artworkURL ?? toplistSummary?.artworkURL
-    }
-
     var body: some View {
         MusicCollectionDetailLayoutView(
             palette: palette,
@@ -48,7 +45,8 @@ struct PlaylistDetailContent: View {
                 )
             } else {
                 StandardMusicCollectionDetailHero(
-                    artworkURL: playlist.artworkURL,
+                    artworkURL: artworkURL,
+                    keepsPreviousArtwork: true,
                     title: playlist.name,
                     subtitle: playlist.creator?.nickname ?? L10n.string("ui.service.netease_cloud_music"),
                     metadataText: standardMetadata,
@@ -165,6 +163,7 @@ struct MusicCollectionTrackContent: View {
 struct StandardMusicCollectionDetailHero: View {
     @Environment(\.musicCollectionDetailMetrics) private var detailMetrics
     let artworkURL: URL?
+    var keepsPreviousArtwork = false
     let title: String
     let subtitle: String
     let metadataText: String
@@ -181,6 +180,7 @@ struct StandardMusicCollectionDetailHero: View {
         if detailMetrics.usesAdaptiveHeader {
             AdaptiveMusicCollectionHero(
                 artworkURL: artworkURL,
+                keepsPreviousArtwork: keepsPreviousArtwork,
                 title: title,
                 subtitle: subtitle,
                 metadataText: metadataText,
@@ -199,11 +199,15 @@ struct StandardMusicCollectionDetailHero: View {
 
     private var standardHero: some View {
         VStack(spacing: 0) {
-            ArtworkImage(url: artworkURL, cornerRadius: 12)
-                .containerRelativeFrame(.horizontal) { width, _ in
-                    min(width * 0.68, 300)
-                }
-                .shadow(color: .black.opacity(0.18), radius: 18, y: 10)
+            ArtworkImage(
+                url: artworkURL,
+                cornerRadius: 12,
+                keepsPreviousImage: keepsPreviousArtwork
+            )
+            .containerRelativeFrame(.horizontal) { width, _ in
+                min(width * 0.68, 300)
+            }
+            .shadow(color: .black.opacity(0.18), radius: 18, y: 10)
 
             Text(title)
                 .font(.title2.weight(.bold))
@@ -254,6 +258,7 @@ private struct ToplistDetailHero: View {
         if detailMetrics.usesAdaptiveHeader {
             AdaptiveMusicCollectionHero(
                 artworkURL: artworkURL,
+                keepsPreviousArtwork: true,
                 title: playlist.name,
                 subtitle: creatorName,
                 metadataText: [updateText, L10n.format("ui.common.song_count", playlist.trackCount)].compactMap { $0 }.joined(separator: " · "),
@@ -272,7 +277,7 @@ private struct ToplistDetailHero: View {
 
     private var standardHero: some View {
         VStack(spacing: 0) {
-            ArtworkImage(url: artworkURL, cornerRadius: 0)
+            ArtworkImage(url: artworkURL, cornerRadius: 0, keepsPreviousImage: true)
                 .containerRelativeFrame(.horizontal)
                 // Blend into the scrolling blurred continuation rather than
                 // fading directly into the much darker reading surface.

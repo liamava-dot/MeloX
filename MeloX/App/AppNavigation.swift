@@ -159,7 +159,7 @@ enum MusicRoute: Hashable {
     var transitionArtworkURL: URL? {
         switch self {
         case .playlist(let context), .toplist(let context):
-            context.coverURLString.flatMap(URL.init(string:))
+            makeArtworkURL(from: context.coverURLString)
         case .album(let context):
             context.picURL.flatMap(URL.init(string:))
         case .podcast(let podcast):

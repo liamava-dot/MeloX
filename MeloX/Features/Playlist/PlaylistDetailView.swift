@@ -42,7 +42,7 @@ struct PlaylistDetailView: View {
 
     init(playlist context: PlaylistRouteContext) {
         let cachedAssets = ArtworkAccentColorProvider.cachedDetailAssets(
-            for: context.coverURLString.flatMap(URL.init(string:))
+            for: makeArtworkURL(from: context.coverURLString)
         )
         id = context.id
         initialPlaylist = context.playlistSummary
@@ -55,7 +55,7 @@ struct PlaylistDetailView: View {
 
     init(toplist context: PlaylistRouteContext) {
         let cachedAssets = ArtworkAccentColorProvider.cachedDetailAssets(
-            for: context.coverURLString.flatMap(URL.init(string:))
+            for: makeArtworkURL(from: context.coverURLString)
         )
         id = context.id
         initialPlaylist = context.playlistSummary
@@ -71,6 +71,7 @@ struct PlaylistDetailView: View {
             PlaylistDetailContent(
                 playlist: displayedPlaylist,
                 toplistSummary: prefersToplistLayout ? initialPlaylist : nil,
+                artworkURL: artworkURL,
                 palette: resolvedPalette,
                 blurredBackdropImage: blurredBackdropImage,
                 searchQuery: searchQuery,
