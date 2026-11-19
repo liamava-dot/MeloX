@@ -1,7 +1,12 @@
 import SwiftUI
 
+extension EnvironmentValues {
+    @Entry var nowPlayingSheetColorScheme: ColorScheme = .dark
+}
+
 struct NowPlayingSongActions: View {
     @Environment(\.openMusicRoute) private var openMusicRoute
+    @Environment(\.nowPlayingSheetColorScheme) private var sheetColorScheme
     @Environment(AppSettings.self) private var settings
     @Environment(LibraryStore.self) private var library
     @Environment(PlayerStore.self) private var player
@@ -26,8 +31,12 @@ struct NowPlayingSongActions: View {
                     .presentationDragIndicator(.visible)
             case .comments(let selectedSong):
                 SongCommentsSheet(song: selectedSong)
+                    .environment(\.colorScheme, sheetColorScheme)
+                    .preferredColorScheme(sheetColorScheme)
             case .songWiki(let selectedSong):
                 SongWikiSheet(song: selectedSong)
+                    .environment(\.colorScheme, sheetColorScheme)
+                    .preferredColorScheme(sheetColorScheme)
             case .listenTogether:
                 ListenTogetherView()
                     .presentationDetents([.medium, .large])

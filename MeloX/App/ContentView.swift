@@ -415,6 +415,7 @@ struct ContentView: View {
             .toolbarVisibility(.hidden, for: .navigationBar)
             .musicDestinations()
         }
+        .environment(\.nowPlayingSheetColorScheme, appColorScheme)
         .environment(
             \.openMusicRoute,
             OpenMusicRouteAction(action: openMusicRoute)
